@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aplikasi Penjualan Salad Buah</title>
+<style>
+  :root {
+    --accent: #16a34a;
+    --bg: #f5f7fa;
+    --card: #fff;
+    --muted: #6b7280;
+    --white-trans: rgba(255, 255, 255, 0.8);
+    --green-trans: rgba(240, 253, 244, 0.8);
+  }
+
+  * { box-sizing: border-box; font-family: Poppins, sans-serif; }
+
+  body { background: var(--bg); margin: 0; padding: 20px; }
+
+  h1 { text-align: center; color: var(--muted); margin-bottom: 20px; }
+
+  /* Container dengan overlay transparan */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    background-image: url(https://png.pngtree.com/thumb_back/fw800/background/20241111/pngtree-fresh-fruit-salad-in-bowl-image_16498423.jpg);
+    background-size: cover;
+    background-position: center;
+    background-color: var(--white-trans);
+    backdrop-filter: blur(2px);
+    transition: transform 0.3s ease;
+  }
+  .container:hover { transform: scale(1.02); }
+
+  /* Form */
+  form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  input, select, button {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  input:focus, select:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 5px rgba(22,163,74,0.3);
+  }
+
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover { opacity: 0.9; transform: scale(1.05); }
+
+  /* Tabel */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 16px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  th, td {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    transition: background 0.2s ease;
+  }
+  th { background: #eafbea; }
+  tbody tr:hover { background: rgba(22, 163, 74, 0.1); }
+  tfoot td { font-weight: bold; }
+
+  /* Tombol hapus */
+  td button {
+    background: #ef4444;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  td button:hover { transform: scale(1.2); background: #dc2626; }
+
+  /* Ringkasan */
+  .summary {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    background: var(--green-trans);
+    transition: background 0.3s ease;
+  }
+  .summary:hover { background: rgba(240,253,244,0.95); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    body { padding: 10px; }
+    form { grid-template-columns: 1fr 1fr; }
+    table { font-size: 12px; }
+  }
+  @media (max-width: 480px) {
+    form { grid-template-columns: 1fr; }
+    table { font-size: 11px; }
+    th, td { padding: 6px; }
+  }
+</style>
+</head>
+<body>
+  <h1>📊 Aplikasi Pembukuan</h1>
+  <div class="container">
+    <form id="form">
+      <input type="date" id="tgl" required />
+      <input type="text" id="produk" placeholder="Nama Produk" required />
+      <input type="number" id="modal" placeholder="Modal per item (Rp)" required />
+      <input type="number" id="harga" placeholder="Harga jual (Rp)" required />
+      <input type="number" id="jumlah" placeholder="Jumlah terjual" required />
+      <button type="submit">Tambah</button>
+    </form>
+
+    <table id="tabel">
+      <thead style="border-radius: 8px;">
+        <tr>
+          <th>Tanggal</th>
+          <th>Produk</th>
+          <th>Modal</th>
+          <th>Harga Jual</th>
+          <th>Jumlah</th>
+          <th>Pendapatan</th>
+          <th>Laba</th>
+          <th>Margin</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5">Total</td>
+          <td id="totalPendapatan">Rp 0</td>
+          <td id="totalLaba">Rp 0</td>
+          <td id="rataMargin">0%</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="summary">
+      <b>Rekap Otomatis:</b><br>
+      Total Modal: <span id="totalModal">Rp 0</span><br>
+      Total Pendapatan: <span id="sumPendapatan">Rp 0</span><br>
+      Total Laba Bersih: <span id="sumLaba">Rp 0</span><br>
+      Margin Rata-rata: <span id="sumMargin">0%</span>
+    </div>
+  </div>
+
+<script>
+// JS kamu tetap sama seperti file sebelumnya
+const form = document.getElementById("form");
+const tbody = document.querySelector("tbody");
+let data = JSON.parse(localStorage.getItem("penjualanSalad") || "[]");
+
+// Ganti dengan URL Google Sheets kamu jika ada
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbx4CVC9_aWwd3IeQUhfZJTUPL8YX5EMEHUZwUEE37Oa9QpkyxuyghQuBG3Ghz4HyTrm/exec";
+
+function rupiah(n){ return "Rp " + n.toLocaleString("id-ID"); }
+
+function render(){
+  tbody.innerHTML = "";
+  let totalModal = 0, totalPendapatan = 0, totalLaba = 0;
+  data.forEach((d,i)=>{
+    const pendapatan = d.harga * d.jumlah;
+    const modalTotal = d.modal * d.jumlah;
+    const laba = pendapatan - modalTotal;
+    const margin = (laba / pendapatan * 100).toFixed(1);
+
+    totalModal += modalTotal;
+    totalPendapatan += pendapatan;
+    totalLaba += laba;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.tgl}</td>
+      <td>${d.produk}</td>
+      <td>${rupiah(d.modal)}</td>
+      <td>${rupiah(d.harga)}</td>
+      <td>${d.jumlah}</td>
+      <td>${rupiah(pendapatan)}</td>
+      <td>${rupiah(laba)}</td>
+      <td>${margin}%</td>
+      <td><button onclick="hapus(${i})">🗑️</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("totalPendapatan").textContent = rupiah(totalPendapatan);
+  document.getElementById("totalLaba").textContent = rupiah(totalLaba);
+  document.getElementById("rataMargin").textContent = ((totalLaba/totalPendapatan)*100 || 0).toFixed(1) + "%";
+
+  document.getElementById("totalModal").textContent = rupiah(totalModal);
+  document.getElementById("sumPendapatan").textContent = rupiah(totalPendapatan);
+  document.getElementById("sumLaba").textContent = rupiah(totalLaba);
+  document.getElementById("sumMargin").textContent = ((totalLaba/totalPendapatan)*100 || 0).toFixed(1) + "%";
+
+  localStorage.setItem("penjualanSalad", JSON.stringify(data));
+}
+
+form.addEventListener("submit", e=>{
+  e.preventDefault();
+  const tgl = document.getElementById("tgl").value;
+  const produk = document.getElementById("produk").value;
+  const modal = Number(document.getElementById("modal").value);
+  const harga = Number(document.getElementById("harga").value);
+  const jumlah = Number(document.getElementById("jumlah").value);
+
+  if(!tgl || !produk || !modal || !harga || !jumlah) return alert("Lengkapi semua data!");
+
+  const pendapatan = harga * jumlah;
+  const laba = pendapatan - (modal * jumlah);
+  const margin = ((laba / pendapatan) * 100).toFixed(1);
+
+  const newData = {tgl, produk, modal, harga, jumlah, pendapatan, laba, margin};
+
+  data.push(newData);
+  form.reset();
+  render();
+
+  if(SHEET_URL !== "https://script.google.com/macros/s/AKfycbx4CVC9_aWwd3IeQUhfZJTUPL8YX5EMEHUZwUEE37Oa9QpkyxuyghQuBG3Ghz4HyTrm/exec"){
+    fetch(SHEET_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newData)
+    })
+    .then(res => res.json())
+    .then(result => console.log("Hasil dari Sheet:", result))
+    .catch(err => console.error("Gagal kirim:", err));
+  }
+});
+
+function hapus(i){
+  if(confirm("Hapus data ini?")){ data.splice(i,1); render(); }
+}
+
+render();
+</script>
+</body>
+</html>
